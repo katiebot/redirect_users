@@ -1,0 +1,170 @@
+<?php
+/**
+ * @file
+ * Redirect specific users to specific pages from one URL.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function redirect_users_menu() {
+  $items = array();
+
+  $items['admin/config/redirect-users'] = array(
+    'title' => 'Redirect Users admin settings',
+    'description' => 'Configuration for Redirect Users.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('redirect_users_form'),
+    'access arguments' => array('configure redirect users'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items[variable_get('redirect_users_url')] = array(
+    'title' => 'Redirect users',
+    'page callback' => 'redirect_users',
+    'access callback' => 'user_is_logged_in',
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['link/autocomplete'] = array(
+    'title' => 'Link autocomplete',
+    'page callback' => 'link_autocomplete_callback',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function redirect_users_permission() {
+  return array(
+    'configure redirect users' => array(
+      'title' => t('Administer Redirect Users'),
+      'description' => t('Redirect specific users to specific pages from one URL'),
+    ),
+  );
+}
+
+/**
+ * Create and display the configuration settings form.
+ */
+
+function redirect_users_form($form, &$form_state) {
+
+  $form['redirect_users_url'] = array(
+    '#type' => 'textfield',
+    '#default_value' => variable_get('redirect_users_url'),
+    '#title' => t('From URL'),
+    '#description' => t('The URL you wish to redirect from - this URL must NOT already exist in Drupal.'),
+    '#required' => TRUE,
+  );
+
+  $form['redirect_users_user'] = array(
+    '#type' => 'textfield',
+    '#default_value' => variable_get('redirect_users_user'),
+    '#title' => t('User name'),
+    '#description' => t('The user you wish to redirect.'),
+    '#required' => TRUE,
+    '#autocomplete_path' => 'user/autocomplete',
+  );
+
+  $form['redirect_users_user_url'] = array(
+    '#type' => 'textfield',
+    '#default_value' => variable_get('redirect_users_user_url'),
+    '#title' => t('To node or taxonomy'),
+    '#description' => t('The node or taxonomy you wish to redirect to.'),
+    '#required' => TRUE,
+    '#autocomplete_path' => 'link/autocomplete',
+    '#attributes' => array('class' => array('link-autocomplete')),
+  );
+
+  $form['redirect_users_user_url']['#attached']['js'][] = array(
+    'data' => drupal_get_path('module', 'redirect_users') . '/js/link-autocomplete.js',
+    'type' => 'file'
+  );
+
+  return system_settings_form($form);
+}
+
+/**
+ * Validate URLs for Redirect Users module.
+ */
+function redirect_users_form_validate($form, &$form_state) {
+  if (!valid_url($form_state['values']['redirect_users_user_url'])) {
+    form_set_error('', t('You must select a name for this group of settings.'));
+  }
+}
+
+/**
+ * Save configuration settings for Redirect Users module.
+ */
+function redirect_users_form_submit($form, &$form_state) {
+  variable_set('redirect_users_url', $form_state['values']['redirect_users_url']);
+  variable_set('redirect_users_user', $form_state['values']['redirect_users_user']);
+  variable_set('redirect_users_user_url', $form_state['values']['redirect_users_user_url']);
+
+  drupal_set_message(t('The settings have been saved'));
+}
+
+/**
+ * Provides a json object for autocompleting internal links based on node title.
+ */
+function link_autocomplete_callback($string = '') {
+
+  $matches = array();
+  if ($string) {
+    $result = db_select('node')->fields('node', array('nid', 'title'))->condition('title', db_like($string) . '%', 'LIKE');
+    $result = $result->range(0, 10)->execute();
+
+    foreach ($result as $node) {
+      $matches['node/' . $node->nid] = array('title' => check_plain($node->title), 'display' => check_plain($node->title) . ' (node/' . $node->nid . ')');
+    }
+
+    $result = db_select('taxonomy_term_data')->fields('taxonomy_term_data', array('tid', 'name'))->condition('name', db_like($string) . '%', 'LIKE');
+    $result = $result->range(0, 10)->execute();
+
+    foreach ($result as $term) {
+      $matches['taxonomy/term/' . $term->tid] = array('title' => check_plain($term->name), 'display' => check_plain($term->name) . ' (taxonomy/term/' . $term->tid . ')');
+    }
+
+  }
+
+  drupal_json_output($matches);
+}
+
+/**
+ * Page callback for redirecting users.
+ */
+function redirect_users() {
+
+  global $user;
+
+  switch ($user->uid) {
+
+    // Servilles Business
+    case '68' :
+      $url = 'node/48';
+      break;
+
+    // Bossy
+    case '69' :
+      $url = 'node/51';
+      break;
+
+    // Australia
+    case '70' :
+      $url = 'node/52';
+      break;
+
+    default :
+      $url = '<front>';
+      break;
+
+  }
+
+  return drupal_goto($url);
+
+}
