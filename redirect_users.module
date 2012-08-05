@@ -62,7 +62,12 @@ function redirect_users_form($form, &$form_state) {
     '#required' => TRUE,
   );
 
-  $form['redirect_users_user'] = array(
+  $form['redirect_users'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Users and destinations',
+  );
+  
+  $form['redirect_users']['redirect_users_user'] = array(
     '#type' => 'textfield',
     '#default_value' => variable_get('redirect_users_user'),
     '#title' => t('User name'),
@@ -71,7 +76,7 @@ function redirect_users_form($form, &$form_state) {
     '#autocomplete_path' => 'user/autocomplete',
   );
 
-  $form['redirect_users_user_url'] = array(
+  $form['redirect_users']['redirect_users_user_url'] = array(
     '#type' => 'textfield',
     '#default_value' => variable_get('redirect_users_user_url'),
     '#title' => t('To node or taxonomy'),
@@ -81,12 +86,44 @@ function redirect_users_form($form, &$form_state) {
     '#attributes' => array('class' => array('link-autocomplete')),
   );
 
-  $form['redirect_users_user_url']['#attached']['js'][] = array(
+  $form['redirect_users']['redirect_users_user_url']['#attached']['js'][] = array(
     'data' => drupal_get_path('module', 'redirect_users') . '/js/link-autocomplete.js',
     'type' => 'file'
   );
+  
+  $form['add-one'] = array(
+    '#type' => 'submit',
+    '#value' => t('Add one more'),
+    '#submit' => array('redirect_users_add_more_add_one'),
+    '#ajax' => array(
+      'callback' => 'redirect_users_add_more_callback',
+      'wrapper' => 'fieldset-wrapper',
+    ),
+    '#attributes' => array(
+      'class' => array('button-add-one'),
+    ),
+  );
 
   return system_settings_form($form);
+}
+
+/**
+ * Callback for both ajax-enabled buttons.
+ *
+ * Selects and returns the fieldset with the names in it.
+ */
+function redirect_users_add_more_callback($form, $form_state) {
+  return $form['redirect_users'];
+}
+
+/**
+ * Submit handler for the "add-one-more" button.
+ *
+ * Increments the max counter and causes a rebuild.
+ */
+function redirect_users_add_more_add_one($form, &$form_state) {
+  $form_state['redirect_users']['num_fieldsets']++;
+  $form_state['rebuild'] = TRUE;
 }
 
 /**
@@ -96,17 +133,6 @@ function redirect_users_form_validate($form, &$form_state) {
   if (!valid_url($form_state['values']['redirect_users_user_url'])) {
     form_set_error('', t('You must select a name for this group of settings.'));
   }
-}
-
-/**
- * Save configuration settings for Redirect Users module.
- */
-function redirect_users_form_submit($form, &$form_state) {
-  variable_set('redirect_users_url', $form_state['values']['redirect_users_url']);
-  variable_set('redirect_users_user', $form_state['values']['redirect_users_user']);
-  variable_set('redirect_users_user_url', $form_state['values']['redirect_users_user_url']);
-
-  drupal_set_message(t('The settings have been saved'));
 }
 
 /**
@@ -144,17 +170,14 @@ function redirect_users() {
 
   switch ($user->uid) {
 
-    // Servilles Business
     case '68' :
       $url = 'node/48';
       break;
 
-    // Bossy
     case '69' :
       $url = 'node/51';
       break;
 
-    // Australia
     case '70' :
       $url = 'node/52';
       break;
