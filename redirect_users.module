@@ -11,7 +11,7 @@ function redirect_users_menu() {
   $items = array();
 
   $items['admin/config/redirect-users'] = array(
-    'title' => 'Redirect Users admin settings',
+    'title' => 'Redirect Users',
     'description' => 'Configuration for Redirect Users.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('redirect_users_form'),
@@ -66,7 +66,7 @@ function redirect_users_form($form, &$form_state) {
     '#type' => 'fieldset',
     '#title' => 'Users and destinations',
   );
-  
+
   $form['redirect_users']['redirect_users_user'] = array(
     '#type' => 'textfield',
     '#default_value' => variable_get('redirect_users_user'),
@@ -90,7 +90,7 @@ function redirect_users_form($form, &$form_state) {
     'data' => drupal_get_path('module', 'redirect_users') . '/js/link-autocomplete.js',
     'type' => 'file'
   );
-  
+
   $form['add-one'] = array(
     '#type' => 'submit',
     '#value' => t('Add one more'),
